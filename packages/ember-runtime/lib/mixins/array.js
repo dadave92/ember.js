@@ -17,12 +17,12 @@ import {
   removeListener,
   sendEvent,
   hasListeners,
-  peekMeta,
   eachProxyFor,
   eachProxyArrayWillChange,
   eachProxyArrayDidChange,
   beginPropertyChanges,
-  endPropertyChanges
+  endPropertyChanges,
+  hasCacheFor
 } from 'ember-metal';
 import { assert, deprecate } from 'ember-debug';
 import Enumerable from './enumerable';
@@ -104,9 +104,10 @@ export function arrayContentDidChange(array, startIdx, removeAmt, addAmt) {
 
   sendEvent(array, '@array:change', [array, startIdx, removeAmt, addAmt]);
 
-  let meta = peekMeta(array);
-  let cache = meta !== undefined ? meta.readableCache() : undefined;
-  if (cache !== undefined) {
+  let hasCachedFirstObject = hasCacheFor(array, 'firstObject');
+  let hasCachedLastObject = hasCacheFor(array, 'lastObject');
+
+  if (hasCachedFirstObject || hasCachedLastObject) {
     let length = get(array, 'length');
     let addedAmount = (addAmt === -1 ? 0 : addAmt);
     let removedAmount = (removeAmt === -1 ? 0 : removeAmt);
@@ -114,15 +115,15 @@ export function arrayContentDidChange(array, startIdx, removeAmt, addAmt) {
     let previousLength = length - delta;
 
     let normalStartIdx = startIdx < 0 ? previousLength + startIdx : startIdx;
-    if (cache.firstObject !== undefined && normalStartIdx === 0) {
-      notifyPropertyChange(array, 'firstObject', meta);
+    if (hasCachedFirstObject && normalStartIdx === 0) {
+      notifyPropertyChange(array, 'firstObject');
     }
 
-    if (cache.lastObject !== undefined) {
+    if (hasCachedLastObject) {
       let previousLastIndex = previousLength - 1;
       let lastAffectedIndex = normalStartIdx + removedAmount;
       if (previousLastIndex < lastAffectedIndex) {
-        notifyPropertyChange(array, 'lastObject', meta);
+        notifyPropertyChange(array, 'lastObject');
       }
    }
   }

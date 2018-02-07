@@ -6,7 +6,7 @@ import {
   Descriptor,
   defineProperty
 } from './properties';
-import { ComputedProperty } from './computed';
+import { ComputedProperty, getCacheFor, setCacheFor } from './computed';
 import { meta as metaFor } from './meta';
 import {
   addDependentKeys,
@@ -52,9 +52,8 @@ export class AliasedProperty extends Descriptor {
   get(obj, keyName) {
     let ret = get(obj, this.altKey);
     let meta = metaFor(obj);
-    let cache = meta.writableCache();
-    if (cache[keyName] !== CONSUMED) {
-      cache[keyName] = CONSUMED;
+    if (getCacheFor(obj, keyName) !== CONSUMED) {
+      setCacheFor(obj, keyName, CONSUMED);
       addDependentKeys(this, obj, keyName, meta);
     }
     return ret;
